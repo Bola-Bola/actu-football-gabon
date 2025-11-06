@@ -9,8 +9,7 @@ services:
       php artisan config:cache
       php artisan route:cache
       php artisan view:cache
-    startCommand: |
-      php -S 0.0.0.0:10000 -t public
+    startCommand: php -S 0.0.0.0:10000 -t public
     envVars:
       - key: APP_ENV
         value: production
@@ -18,8 +17,3 @@ services:
         value: false
       - key: APP_KEY
         sync: false
-      - key: DB_CONNECTION
-        value: mysql
-      # Ajoute tes variables DB_ ici si tu utilises une base Render
-
-        value: https://actu-football-gabon.onrender.com
