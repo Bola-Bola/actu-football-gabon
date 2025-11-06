@@ -7,8 +7,11 @@ services:
       composer install --no-dev --optimize-autoloader
       php artisan key:generate --force
       php artisan storage:link
-    startCommand: |
-      php artisan serve --host=0.0.0.0 --port=10000
+      chmod +x start.sh
+      echo "=== Build terminé ==="
+      pwd
+      ls -la
+    startCommand: bash start.sh
     envVars:
       - key: APP_ENV
         value: production
