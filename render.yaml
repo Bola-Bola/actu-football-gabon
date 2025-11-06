@@ -1,10 +1,16 @@
 services:
   - type: web
     name: actu-football-gabon
-    env: docker
+    env: php
     plan: free
-    buildCommand: ""
-    startCommand: ""
+    buildCommand: |
+      composer install --no-dev --optimize-autoloader
+      php artisan key:generate
+      php artisan config:cache
+      php artisan route:cache
+      php artisan view:cache
+    startCommand: |
+      php -S 0.0.0.0:10000 -t public
     envVars:
       - key: APP_ENV
         value: production
@@ -12,5 +18,8 @@ services:
         value: false
       - key: APP_KEY
         sync: false
-      - key: APP_URL
+      - key: DB_CONNECTION
+        value: mysql
+      # Ajoute tes variables DB_ ici si tu utilises une base Render
+
         value: https://actu-football-gabon.onrender.com
