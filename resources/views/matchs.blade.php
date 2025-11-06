@@ -606,7 +606,7 @@
                 </li>
                 <li class="nav-item mt-3">
                     <a class="nav-link" href="{{ route('matchs.store') }}">
-                        <i class="fas fa-medal"></i> Résultats-Matchs
+                        <i class="fas fa-medal"></i> Résultats-Match
                     </a>
                 </li>
 
