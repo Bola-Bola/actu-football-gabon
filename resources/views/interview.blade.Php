@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Gestion des Actualités - Football Gabonais</title>
+    <title>Gestion des Interviews - Football Gabonais</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
     <style>
@@ -37,11 +37,13 @@
             box-shadow: 4px 0 20px rgba(0,0,0,0.15);
             z-index: 1000;
             overflow-y: auto;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .sidebar-brand {
             padding: 2rem 1.5rem;
             border-bottom: 2px solid rgba(252, 209, 22, 0.3);
+            background: linear-gradient(135deg, rgba(0,0,0,0.2) 0%, transparent 100%);
             text-align: center;
         }
 
@@ -60,6 +62,17 @@
             font-size: 1.4rem;
             font-weight: 700;
             margin: 0;
+            text-shadow: 2px 2px 6px rgba(0,0,0,0.3);
+        }
+
+        .sidebar-brand .text-muted {
+            color: var(--gabon-yellow) !important;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .nav-item {
+            margin: 0.25rem 0.75rem;
         }
 
         .nav-link {
@@ -70,7 +83,12 @@
             display: flex;
             align-items: center;
             font-weight: 500;
-            margin: 0.25rem 0.75rem;
+            font-size: 0.95rem;
+            border: none;
+            background: transparent;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
             text-decoration: none;
         }
 
@@ -78,12 +96,40 @@
             background: rgba(252, 209, 22, 0.2);
             color: white;
             transform: translateX(8px);
+            box-shadow: 0 4px 12px rgba(252, 209, 22, 0.2);
         }
 
         .nav-link.active {
             background: linear-gradient(135deg, var(--gabon-yellow) 0%, #f0c000 100%);
             color: var(--dark-green);
             font-weight: 600;
+            box-shadow: 0 6px 15px rgba(252, 209, 22, 0.4);
+            transform: translateX(5px);
+        }
+
+        .nav-link.logout-btn {
+            background: rgba(220, 53, 69, 0.15);
+            color: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+        }
+
+        .nav-link.logout-btn:hover {
+            background: rgba(220, 53, 69, 0.9);
+            color: white;
+            border-color: #dc3545;
+            transform: translateX(8px);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+        }
+
+        .nav-link i {
+            width: 22px;
+            margin-right: 0.85rem;
+            font-size: 1.1rem;
+        }
+
+        .nav-separator {
+            margin: 1.5rem 0.75rem 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .main-content {
@@ -130,6 +176,10 @@
             border-left-color: var(--gabon-blue);
         }
 
+        .stats-card.red-border {
+            border-left-color: #dc3545;
+        }
+
         .stats-icon {
             width: 60px;
             height: 60px;
@@ -154,6 +204,11 @@
         .stats-icon.blue {
             background: rgba(58,117,196,0.1);
             color: var(--gabon-blue);
+        }
+
+        .stats-icon.red {
+            background: rgba(220,53,69,0.1);
+            color: #dc3545;
         }
 
         .stats-number {
@@ -294,11 +349,13 @@
         }
 
         .media-preview {
-            max-width: 100%;
-            max-height: 200px;
+            max-width: 150px;
+            max-height: 150px;
             border-radius: 10px;
             border: 3px solid var(--gabon-green);
             margin-top: 10px;
+            padding: 10px;
+            background: white;
         }
 
         .badge-publie {
@@ -313,6 +370,15 @@
         .badge-brouillon {
             background: var(--gabon-yellow);
             color: var(--dark-green);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .badge-archive {
+            background: #6c757d;
+            color: white;
             padding: 8px 16px;
             border-radius: 20px;
             font-weight: 600;
@@ -338,6 +404,7 @@
             justify-content: center;
             transition: all 0.3s;
             cursor: pointer;
+            text-decoration: none;
         }
 
         .btn-action.edit {
@@ -379,6 +446,12 @@
             border-left: 4px solid #dc3545;
         }
 
+        .alert-info {
+            background: rgba(58,117,196,0.1);
+            color: #0c5460;
+            border-left: 4px solid var(--gabon-blue);
+        }
+
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -391,24 +464,16 @@
             margin-bottom: 20px;
         }
 
-        .upload-progress {
-            margin-top: 10px;
-        }
-
-        .progress {
-            height: 25px;
-            border-radius: 10px;
-        }
-
-        .progress-bar {
-            background: linear-gradient(135deg, var(--gabon-green) 0%, var(--dark-green) 100%);
+        .spinner-border-sm {
+            width: 1rem;
+            height: 1rem;
         }
     </style>
 </head>
 <body>
     <!-- Sidebar -->
     <nav class="sidebar">
-        <div class="sidebar-brand">
+        <div class="sidebar-brand text-center">
             <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Flag_of_Gabon.svg/200px-Flag_of_Gabon.svg.png" alt="Gabon">
             <h3><i class="fas fa-futbol"></i> Football Gabon</h3>
             <small class="text-muted">Administration Sportive</small>
@@ -420,30 +485,33 @@
                     <i class="fas fa-chart-line"></i> Tableau de bord
                 </a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item mt-3">
                 <a class="nav-link" href="{{ route('equipes.store') }}">
                     <i class="fas fa-shield-alt"></i> Équipes
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link active" href="{{ route('actualites.store') }}">
+                <a class="nav-link" href="{{ route('actualites.store') }}">
                     <i class="fas fa-newspaper"></i> Actualités
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="{{ route('interview.store') }}">
+                <a class="nav-link active" href="{{ route('interview.store') }}">
                     <i class="fas fa-microphone"></i> Interviews
                 </a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item mt-3">
                 <a class="nav-link" href="{{ route('matchs.store') }}">
                     <i class="fas fa-medal"></i> Résultats-Matchs
                 </a>
             </li>
-            <li class="nav-item mt-3">
+
+            <li class="nav-separator"></li>
+
+            <li class="nav-item">
                 <form action="{{ route('deconnexion') }}" method="POST" style="margin: 0;">
                     @csrf
-                    <button type="submit" class="nav-link" style="border: none; background: transparent; width: 100%; cursor: pointer;">
+                    <button type="submit" class="nav-link logout-btn">
                         <i class="fas fa-sign-out-alt"></i> Déconnexion
                     </button>
                 </form>
@@ -456,20 +524,20 @@
         <!-- Top Navbar -->
         <div class="top-navbar">
             <h1 class="page-title">
-                <i class="fas fa-newspaper me-2"></i>Gestion des Actualités
+                <i class="fas fa-microphone me-2"></i>Gestion des Interviews
             </h1>
         </div>
 
         <!-- Notifications -->
         @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show">
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
             <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
         @endif
 
         @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show">
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
             <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
@@ -477,7 +545,7 @@
 
         @if($errors->any())
         <div class="alert alert-danger alert-dismissible fade show">
-            <strong>Erreurs :</strong>
+            <strong>Erreurs de validation :</strong>
             <ul class="mb-0 mt-2">
                 @foreach($errors->all() as $error)
                 <li>{{ $error }}</li>
@@ -494,10 +562,10 @@
             <div class="col-xl-3 col-md-6 mb-3">
                 <div class="stats-card">
                     <div class="stats-icon green">
-                        <i class="fas fa-newspaper"></i>
+                        <i class="fas fa-microphone"></i>
                     </div>
-                    <div class="stats-number">{{ $totalArticles ?? 0 }}</div>
-                    <div class="stats-label">Articles Total</div>
+                    <div class="stats-number">{{ $totalInterviews ?? 0 }}</div>
+                    <div class="stats-label">Interviews Total</div>
                 </div>
             </div>
             <div class="col-xl-3 col-md-6 mb-3">
@@ -505,7 +573,7 @@
                     <div class="stats-icon yellow">
                         <i class="fas fa-check-circle"></i>
                     </div>
-                    <div class="stats-number">{{ $publishedArticles ?? 0 }}</div>
+                    <div class="stats-number">{{ $publishedInterviews ?? 0 }}</div>
                     <div class="stats-label">Publiés</div>
                 </div>
             </div>
@@ -514,17 +582,17 @@
                     <div class="stats-icon blue">
                         <i class="fas fa-clock"></i>
                     </div>
-                    <div class="stats-number">{{ $draftArticles ?? 0 }}</div>
+                    <div class="stats-number">{{ $draftInterviews ?? 0 }}</div>
                     <div class="stats-label">Brouillons</div>
                 </div>
             </div>
             <div class="col-xl-3 col-md-6 mb-3">
-                <div class="stats-card">
-                    <div class="stats-icon green">
-                        <i class="fas fa-list"></i>
+                <div class="stats-card red-border">
+                    <div class="stats-icon red">
+                        <i class="fas fa-archive"></i>
                     </div>
-                    <div class="stats-number">{{ $totalCategories ?? 0 }}</div>
-                    <div class="stats-label">Catégories</div>
+                    <div class="stats-number">{{ $archivedInterviews ?? 0 }}</div>
+                    <div class="stats-label">Archivés</div>
                 </div>
             </div>
         </div>
@@ -534,12 +602,12 @@
             <div class="col-xl-4 col-lg-5 mb-4">
                 <div class="content-card">
                     <div class="card-header-custom">
-                        <i class="fas fa-plus-circle me-2"></i><span id="formTitle">Nouvel Article</span>
+                        <i class="fas fa-plus-circle me-2"></i><span id="formTitle">Nouvelle Interview</span>
                     </div>
                     <div class="card-body-custom">
-                        <form id="actualiteForm" enctype="multipart/form-data">
-                            <input type="hidden" id="actualiteId">
-                            <input type="hidden" id="currentMedia">
+                        <form id="interviewForm">
+                            <input type="hidden" id="interviewId">
+                            <input type="hidden" id="currentImage">
 
                             <div class="mb-3">
                                 <label class="form-label">Administrateur *</label>
@@ -553,60 +621,62 @@
 
                             <div class="mb-3">
                                 <label class="form-label">Titre *</label>
-                                <input type="text" class="form-control" name="titre" id="titre" required>
+                                <input type="text" class="form-control" name="titre" id="titre" placeholder="Titre de l'interview..." required>
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label">Contenu *</label>
-                                <textarea class="form-control" name="contenu" id="contenu" rows="4" required></textarea>
+                                <label class="form-label">Image</label>
+                                <input type="file" class="form-control" name="image" id="image" accept="image/*">
+                                <small class="text-muted">JPG, PNG, GIF (Max 5Mo)</small>
+                                <div id="imagePreview" class="mt-2"></div>
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label">Média (Image/Vidéo)</label>
-                                <input type="file" class="form-control" name="media" id="media" accept="image/*,video/*">
-                                <small class="text-muted">JPG, PNG, GIF, MP4, MOV, AVI, WEBM (Max 50Mo)</small>
-                                <div id="mediaPreview"></div>
-                                <div id="uploadProgress" class="upload-progress" style="display: none;">
-                                    <div class="progress">
-                                        <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%">0%</div>
-                                    </div>
-                                </div>
+                                <label class="form-label">Nom de l'interviewé *</label>
+                                <input type="text" class="form-control" name="nom_interviewe" id="nom_interviewe" placeholder="Ex: Pierre-Emerick Aubameyang" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Poste/Fonction *</label>
+                                <input type="text" class="form-control" name="poste_interviewe" id="poste_interviewe" placeholder="Ex: Attaquant" required>
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label">Catégorie *</label>
                                 <select class="form-select" name="categorie" id="categorie" required>
                                     <option value="">Choisir...</option>
-                                    <option value="Équipe Nationale">Équipe Nationale</option>
-                                    <option value="Championnat Gabonais">Championnat Gabonais</option>
-                                    <option value="Transferts">Transferts</option>
-                                    <option value="Interviews">Interviews</option>
-                                    <option value="CAF">Compétitions CAF</option>
-                                    <option value="Formation">Formation & Jeunes</option>
-                                    <option value="Actualités">Actualités Générales</option>
+                                    <option value="joueur">Joueur</option>
+                                    <option value="entraineur">Entraîneur</option>
+                                    <option value="dirigeant">Dirigeant</option>
+                                    <option value="autre">Autre</option>
                                 </select>
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label">Date de publication *</label>
-                                <input type="datetime-local" class="form-control" name="date_publication" id="date_publication" value="{{ now()->format('Y-m-d\TH:i') }}" required>
+                                <label class="form-label">Contenu de l'interview *</label>
+                                <textarea class="form-control" name="contenu" id="contenu" rows="4" placeholder="Questions et réponses..." required></textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Date de l'interview *</label>
+                                <input type="date" class="form-control" name="date_interview" id="date_interview" required>
                             </div>
 
                             <div class="mb-4">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="publie" value="1" id="publie">
-                                    <label class="form-check-label" for="publie">
-                                        Publier immédiatement
-                                    </label>
-                                </div>
+                                <label class="form-label">Statut *</label>
+                                <select class="form-select" name="statut" id="statut" required>
+                                    <option value="brouillon">Brouillon</option>
+                                    <option value="publie">Publié</option>
+                                    <option value="archive">Archivé</option>
+                                </select>
                             </div>
 
                             <div class="d-flex gap-2">
-                                <button type="submit" class="btn btn-gabon flex-fill" id="submitBtn">
+                                <button type="submit" class="btn btn-gabon flex-fill">
                                     <i class="fas fa-save me-2"></i><span id="btnText">Enregistrer</span>
                                 </button>
                                 <button type="button" class="btn btn-cancel" id="cancelBtn" style="display:none;" onclick="cancelEdit()">
-                                    <i class="fas fa-times"></i>
+                                    <i class="fas fa-times me-2"></i>Annuler
                                 </button>
                             </div>
                         </form>
@@ -614,62 +684,67 @@
                 </div>
             </div>
 
-            <!-- Liste -->
+            <!-- Liste des interviews -->
             <div class="col-xl-8 col-lg-7 mb-4">
                 <div class="content-card">
                     <div class="card-header-custom">
-                        <i class="fas fa-list me-2"></i>Liste des Articles (<span id="articleCount">{{ $actualites->count() }}</span>)
+                        <i class="fas fa-list me-2"></i>Liste des Interviews (<span id="interviewCount">{{ $interviews->count() }}</span>)
                     </div>
                     <div class="card-body-custom">
                         <div class="table-responsive">
                             <table class="table table-custom">
                                 <thead>
                                     <tr>
-                                        <th>Média</th>
+                                        <th>Image</th>
                                         <th>Titre</th>
+                                        <th>Interviewé</th>
                                         <th>Catégorie</th>
                                         <th>Statut</th>
                                         <th>Date</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody id="actualitesTable">
-                                    @forelse($actualites as $actualite)
-                                    <tr data-actualite-id="{{ $actualite->id }}">
+                                <tbody id="interviewsTable">
+                                    @forelse($interviews as $interview)
+                                    <tr data-interview-id="{{ $interview->id }}">
                                         <td>
-                                            @if($actualite->image)
-                                                @if($actualite->isVideo())
-                                                    <i class="fas fa-video fa-3x text-primary"></i>
-                                                @else
-                                                    <img src="{{ asset('storage/' . $actualite->image) }}" alt="Image" class="preview-img">
-                                                @endif
+                                            @if($interview->image)
+                                            <img src="{{ asset('storage/' . $interview->image) }}" class="preview-img" alt="Interview">
                                             @else
-                                                <i class="fas fa-image fa-3x text-muted"></i>
+                                            <div class="text-center">
+                                                <i class="fas fa-user-circle fa-3x text-muted"></i>
+                                            </div>
                                             @endif
                                         </td>
                                         <td>
-                                            <strong>{{ Str::limit($actualite->titre, 50) }}</strong><br>
-                                            <small class="text-muted">{{ $actualite->admin->nom ?? 'Inconnu' }}</small>
+                                            <strong>{{ Str::limit($interview->titre, 50) }}</strong><br>
+                                            <small class="text-muted">Par {{ $interview->admin->nom ?? 'Inconnu' }}</small>
                                         </td>
                                         <td>
-                                            <span class="badge-categorie">{{ $actualite->categorie }}</span>
+                                            <strong>{{ $interview->nom_interviewe }}</strong><br>
+                                            <small class="text-muted">{{ $interview->poste_interviewe }}</small>
                                         </td>
                                         <td>
-                                            @if($actualite->publie)
+                                            <span class="badge-categorie">{{ ucfirst($interview->categorie) }}</span>
+                                        </td>
+                                        <td>
+                                            @if($interview->statut == 'publie')
                                                 <span class="badge-publie">Publié</span>
-                                            @else
+                                            @elseif($interview->statut == 'brouillon')
                                                 <span class="badge-brouillon">Brouillon</span>
+                                            @else
+                                                <span class="badge-archive">Archivé</span>
                                             @endif
                                         </td>
                                         <td>
-                                            <small>{{ $actualite->date_publication->format('d/m/Y H:i') }}</small>
+                                            <small>{{ \Carbon\Carbon::parse($interview->date_interview)->format('d/m/Y') }}</small>
                                         </td>
                                         <td>
                                             <div class="d-flex gap-2">
-                                                <button class="btn-action edit" onclick="editActualite({{ $actualite->id }})">
+                                                <button class="btn-action edit" onclick="editInterview({{ $interview->id }})" title="Modifier">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
-                                                <button class="btn-action delete" onclick="deleteActualite({{ $actualite->id }})">
+                                                <button class="btn-action delete" onclick="deleteInterview({{ $interview->id }})" title="Supprimer">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </div>
@@ -677,10 +752,11 @@
                                     </tr>
                                     @empty
                                     <tr>
-                                        <td colspan="6">
+                                        <td colspan="7">
                                             <div class="empty-state">
                                                 <i class="fas fa-inbox"></i>
-                                                <h5>Aucun article</h5>
+                                                <h5>Aucune interview disponible</h5>
+                                                <p>Créez votre première interview avec le formulaire ci-contre</p>
                                             </div>
                                         </td>
                                     </tr>
@@ -696,30 +772,30 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
     <script>
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+        // Configuration CSRF
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-        // Auto-hide alerts
-        setTimeout(() => {
-            document.querySelectorAll('.alert').forEach(alert => {
-                new bootstrap.Alert(alert).close();
+        // Auto-hide alerts after 5 seconds
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
             });
         }, 5000);
 
-        // Preview media
-        document.getElementById('media').addEventListener('change', function(e) {
+        // Set today's date as default
+        document.getElementById('date_interview').valueAsDate = new Date();
+
+        // Preview image on selection
+        document.getElementById('image').addEventListener('change', function(e) {
             const file = e.target.files[0];
-            const preview = document.getElementById('mediaPreview');
+            const preview = document.getElementById('imagePreview');
 
             if (file) {
                 const reader = new FileReader();
-                const isVideo = file.type.startsWith('video/');
-
                 reader.onload = function(e) {
-                    if (isVideo) {
-                        preview.innerHTML = `<video src="${e.target.result}" class="media-preview" controls></video>`;
-                    } else {
-                        preview.innerHTML = `<img src="${e.target.result}" class="media-preview">`;
-                    }
+                    preview.innerHTML = `<img src="${e.target.result}" class="media-preview" alt="Aperçu">`;
                 };
                 reader.readAsDataURL(file);
             } else {
@@ -727,173 +803,125 @@
             }
         });
 
-        // Submit form avec support upload progressif
-        document.getElementById('actualiteForm').addEventListener('submit', async function(e) {
+        // Submit form (Create or Update)
+        document.getElementById('interviewForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            const actualiteId = document.getElementById('actualiteId').value;
+            const interviewId = document.getElementById('interviewId').value;
             const formData = new FormData(this);
-            const submitBtn = document.getElementById('submitBtn');
-            const btnText = document.getElementById('btnText');
-            const progressDiv = document.getElementById('uploadProgress');
-            const progressBar = document.getElementById('progressBar');
 
-            let url = actualiteId ? `/actualites/${actualiteId}` : '/actualites';
-            if (actualiteId) {
+            // URL et méthode selon le mode
+            let url, method;
+            if (interviewId) {
+                url = `/interview/${interviewId}`;
+                method = 'POST';
                 formData.append('_method', 'PUT');
+            } else {
+                url = '/interview';
+                method = 'POST';
             }
 
-            // Désactiver le bouton
-            submitBtn.disabled = true;
-            btnText.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Envoi...';
-
-            // Afficher la barre de progression si fichier volumineux
-            const fileInput = document.getElementById('media');
-            if (fileInput.files[0] && fileInput.files[0].size > 5000000) {
-                progressDiv.style.display = 'block';
-            }
+            // Afficher le loader
+            const btnText = document.getElementById('btnText');
+            const originalText = btnText.textContent;
+            btnText.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>En cours...';
 
             try {
-                const xhr = new XMLHttpRequest();
-
-                // Progress listener
-                xhr.upload.addEventListener('progress', function(e) {
-                    if (e.lengthComputable) {
-                        const percentComplete = (e.loaded / e.total) * 100;
-                        progressBar.style.width = percentComplete + '%';
-                        progressBar.textContent = Math.round(percentComplete) + '%';
-                    }
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: formData
                 });
 
-                xhr.open('POST', url);
-                xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
-                xhr.setRequestHeader('Accept', 'application/json');
+                const result = await response.json();
 
-                xhr.onload = function() {
-                    submitBtn.disabled = false;
-                    btnText.textContent = 'Enregistrer';
-                    progressDiv.style.display = 'none';
-                    progressBar.style.width = '0%';
+                btnText.textContent = originalText;
 
-                    if (xhr.status >= 200 && xhr.status < 300) {
-                        const result = JSON.parse(xhr.responseText);
-                        showAlert('success', actualiteId ? 'Article modifié !' : 'Article créé !');
-                        setTimeout(() => window.location.reload(), 1500);
+                if (result.success || response.ok) {
+                    showAlert('success', interviewId ? 'Interview modifiée avec succès!' : 'Interview créée avec succès!');
+                    cancelEdit();
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    if (result.errors) {
+                        const errorMessages = Object.values(result.errors).flat().join('<br>');
+                        showAlert('danger', errorMessages);
                     } else {
-                        try {
-                            const error = JSON.parse(xhr.responseText);
-                            const errorMsg = error.errors ? Object.values(error.errors).flat().join('<br>') : error.message;
-                            showAlert('danger', errorMsg || 'Erreur lors de l\'enregistrement');
-                        } catch {
-                            showAlert('danger', 'Erreur serveur');
-                        }
+                        showAlert('danger', result.message || 'Erreur lors de l\'enregistrement');
                     }
-                };
-
-                xhr.onerror = function() {
-                    submitBtn.disabled = false;
-                    btnText.textContent = 'Enregistrer';
-                    progressDiv.style.display = 'none';
-                    showAlert('danger', 'Erreur de connexion');
-                };
-
-                xhr.send(formData);
-
+                }
             } catch (error) {
-                submitBtn.disabled = false;
-                btnText.textContent = 'Enregistrer';
-                progressDiv.style.display = 'none';
+                btnText.textContent = originalText;
                 console.error('Erreur:', error);
-                showAlert('danger', 'Erreur inattendue');
+                showAlert('danger', 'Erreur lors de la communication avec le serveur');
             }
         });
 
-        // Edit actualite - VERSION CORRIGÉE
-        async function editActualite(id) {
+        // Edit interview
+        async function editInterview(id) {
             try {
-                const response = await fetch(`/actualites/${id}/edit`, {
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
-                    }
-                });
+                const response = await fetch(`/interview/${id}/edit`);
 
                 if (!response.ok) {
                     throw new Error('Erreur lors du chargement');
                 }
 
-                const result = await response.json();
+                const data = await response.json();
 
-                if (result.success && result.data) {
-                    const data = result.data;
+                // Remplir le formulaire
+                document.getElementById('interviewId').value = data.id;
+                document.getElementById('admin_id').value = data.admin_id;
+                document.getElementById('titre').value = data.titre;
+                document.getElementById('nom_interviewe').value = data.nom_interviewe;
+                document.getElementById('poste_interviewe').value = data.poste_interviewe;
+                document.getElementById('categorie').value = data.categorie;
+                document.getElementById('contenu').value = data.contenu;
+                document.getElementById('date_interview').value = data.date_interview;
+                document.getElementById('statut').value = data.statut;
 
-                    // Remplir le formulaire
-                    document.getElementById('actualiteId').value = data.id;
-                    document.getElementById('admin_id').value = data.admin_id;
-                    document.getElementById('titre').value = data.titre;
-                    document.getElementById('contenu').value = data.contenu;
-                    document.getElementById('categorie').value = data.categorie;
-                    document.getElementById('date_publication').value = data.date_publication;
-                    document.getElementById('publie').checked = data.publie;
-
-                    // Afficher aperçu média existant
-                    const preview = document.getElementById('mediaPreview');
-                    if (data.image) {
-                        document.getElementById('currentMedia').value = data.image;
-                        if (data.is_video) {
-                            preview.innerHTML = `
-                                <div class="mt-2">
-                                    <small class="text-muted">Vidéo actuelle :</small>
-                                    <video src="${data.image}" class="media-preview" controls></video>
-                                </div>`;
-                        } else {
-                            preview.innerHTML = `
-                                <div class="mt-2">
-                                    <small class="text-muted">Image actuelle :</small>
-                                    <img src="${data.image}" class="media-preview">
-                                </div>`;
-                        }
-                    }
-
-                    // Modifier l'interface
-                    document.getElementById('formTitle').textContent = 'Modifier l\'Article';
-                    document.getElementById('btnText').textContent = 'Mettre à jour';
-                    document.getElementById('cancelBtn').style.display = 'inline-block';
-
-                    // Scroll vers le formulaire
-                    document.querySelector('.content-card').scrollIntoView({ behavior: 'smooth' });
-
-                    showAlert('info', 'Article chargé pour modification');
-                } else {
-                    throw new Error('Données invalides');
+                // Afficher l'image actuelle si elle existe
+                if (data.image) {
+                    document.getElementById('currentImage').value = data.image;
+                    document.getElementById('imagePreview').innerHTML =
+                        `<img src="/storage/${data.image}" class="media-preview" alt="Image actuelle">`;
                 }
+
+                // Modifier l'interface
+                document.getElementById('formTitle').textContent = 'Modifier Interview';
+                document.getElementById('btnText').textContent = 'Mettre à jour';
+                document.getElementById('cancelBtn').style.display = 'block';
+
+                // Scroll vers le formulaire
+                document.querySelector('.content-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
             } catch (error) {
                 console.error('Erreur:', error);
-                showAlert('danger', 'Erreur lors du chargement de l\'article');
+                showAlert('danger', 'Erreur lors du chargement de l\'interview');
             }
         }
 
         // Cancel edit
         function cancelEdit() {
-            document.getElementById('actualiteForm').reset();
-            document.getElementById('actualiteId').value = '';
-            document.getElementById('currentMedia').value = '';
-            document.getElementById('mediaPreview').innerHTML = '';
-            document.getElementById('formTitle').textContent = 'Nouvel Article';
+            document.getElementById('interviewForm').reset();
+            document.getElementById('interviewId').value = '';
+            document.getElementById('currentImage').value = '';
+            document.getElementById('imagePreview').innerHTML = '';
+            document.getElementById('formTitle').textContent = 'Nouvelle Interview';
             document.getElementById('btnText').textContent = 'Enregistrer';
             document.getElementById('cancelBtn').style.display = 'none';
-            document.getElementById('date_publication').value = new Date().toISOString().slice(0, 16);
+            document.getElementById('date_interview').valueAsDate = new Date();
         }
 
-        // Delete actualite
-        async function deleteActualite(id) {
-            if (!confirm('Confirmer la suppression de cet article ?')) {
+        // Delete interview
+        async function deleteInterview(id) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer cette interview ?')) {
                 return;
             }
 
             try {
-                const response = await fetch(`/actualites/${id}`, {
+                const response = await fetch(`/interview/${id}`, {
                     method: 'DELETE',
                     headers: {
                         'X-CSRF-TOKEN': csrfToken,
@@ -904,35 +932,36 @@
                 const result = await response.json();
 
                 if (result.success || response.ok) {
-                    showAlert('success', 'Article supprimé !');
+                    showAlert('success', 'Interview supprimée avec succès!');
 
                     // Animation de suppression
-                    const row = document.querySelector(`[data-actualite-id="${id}"]`);
-                    if (row) {
-                        row.style.transition = 'all 0.3s';
-                        row.style.opacity = '0';
-                        row.style.transform = 'translateX(-20px)';
+                    const interviewRow = document.querySelector(`[data-interview-id="${id}"]`);
+                    if (interviewRow) {
+                        interviewRow.style.transition = 'all 0.3s';
+                        interviewRow.style.opacity = '0';
+                        interviewRow.style.transform = 'translateX(-20px)';
 
                         setTimeout(() => {
-                            row.remove();
+                            interviewRow.remove();
 
-                            // Vérifier s'il reste des articles
-                            const remaining = document.querySelectorAll('#actualitesTable tr[data-actualite-id]');
-                            if (remaining.length === 0) {
-                                document.getElementById('actualitesTable').innerHTML = `
+                            // Vérifier s'il reste des interviews
+                            const remainingRows = document.querySelectorAll('#interviewsTable tr[data-interview-id]');
+                            if (remainingRows.length === 0) {
+                                document.getElementById('interviewsTable').innerHTML = `
                                     <tr>
-                                        <td colspan="6">
+                                        <td colspan="7">
                                             <div class="empty-state">
                                                 <i class="fas fa-inbox"></i>
-                                                <h5>Aucun article</h5>
+                                                <h5>Aucune interview disponible</h5>
+                                                <p>Créez votre première interview avec le formulaire ci-contre</p>
                                             </div>
                                         </td>
                                     </tr>`;
                             }
 
-                            // Mettre à jour compteur
-                            const count = parseInt(document.getElementById('articleCount').textContent) - 1;
-                            document.getElementById('articleCount').textContent = Math.max(0, count);
+                            // Mettre à jour le compteur
+                            const count = parseInt(document.getElementById('interviewCount').textContent) - 1;
+                            document.getElementById('interviewCount').textContent = Math.max(0, count);
                         }, 300);
                     }
                 } else {
@@ -940,27 +969,30 @@
                 }
             } catch (error) {
                 console.error('Erreur:', error);
-                showAlert('danger', 'Erreur de connexion');
+                showAlert('danger', 'Erreur lors de la communication avec le serveur');
             }
         }
 
         // Show alert
         function showAlert(type, message) {
-            const container = document.getElementById('alertContainer');
+            const alertContainer = document.getElementById('alertContainer');
             const alertClass = type === 'success' ? 'alert-success' : (type === 'info' ? 'alert-info' : 'alert-danger');
             const icon = type === 'success' ? 'fa-check-circle' : (type === 'info' ? 'fa-info-circle' : 'fa-exclamation-circle');
 
             const alert = document.createElement('div');
             alert.className = `alert ${alertClass} alert-dismissible fade show`;
+            alert.role = 'alert';
             alert.innerHTML = `
                 <i class="fas ${icon} me-2"></i>${message}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             `;
 
-            container.appendChild(alert);
+            alertContainer.appendChild(alert);
 
+            // Auto-hide après 5 secondes
             setTimeout(() => {
-                new bootstrap.Alert(alert).close();
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
             }, 5000);
         }
     </script>

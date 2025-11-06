@@ -491,6 +491,8 @@
                 <nav class="flex space-x-1 md:space-x-6">
                     <a href="{{ route('home') }}" class="px-3 py-2 rounded hover:bg-green-700 font-medium transition">Accueil</a>
                     <a href="{{ route('match') }}" class="px-3 py-2 rounded hover:bg-green-700 font-medium transition">Matchs</a>
+                    <a href="{{ route('interviews') }}" class="px-3 py-2 rounded bg-green-700 font-medium transition">Interviews</a>
+                    <a href="{{ route('about') }}" class="px-3 py-2 rounded hover:bg-green-700 font-medium transition">A propos</a>
                     {{-- <a href="{{ route('equipe') }}" class="px-3 py-2 rounded hover:bg-green-700 font-medium transition">Equipes</a> --}}
                 </nav>
             </div>

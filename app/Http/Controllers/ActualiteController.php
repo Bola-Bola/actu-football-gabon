@@ -6,6 +6,7 @@ use App\Models\Actualite;
 use App\Models\Admin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class ActualiteController extends Controller
 {
@@ -41,40 +42,108 @@ class ActualiteController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'admin_id' => 'required|exists:admins,id',
-            'titre' => 'required|string|max:255',
-            'contenu' => 'required|string',
-            'media' => 'nullable|file|mimes:jpg,jpeg,png,gif,mp4,avi,mov,webm|max:20480',
-            'categorie' => 'required|string',
-            'date_publication' => 'required|date',
-            'publie' => 'nullable',
-        ]);
+        // DEBUG: Log toutes les données reçues
+        Log::info('=== DEBUT UPLOAD ===');
+        Log::info('Request data:', $request->all());
+        Log::info('Has file:', ['has' => $request->hasFile('media')]);
 
-        // Gérer l'upload du média
         if ($request->hasFile('media')) {
             $file = $request->file('media');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $mediaPath = $file->storeAs('actualites', $filename, 'public');
-            $validated['image'] = $mediaPath;
+            Log::info('File info:', [
+                'nom' => $file->getClientOriginalName(),
+                'taille' => $file->getSize(),
+                'mime' => $file->getMimeType(),
+                'extension' => $file->getClientOriginalExtension(),
+                'isValid' => $file->isValid(),
+                'error' => $file->getError(),
+                'errorMessage' => $file->getErrorMessage()
+            ]);
         }
 
-        // Convertir la checkbox en boolean
-        $validated['publie'] = $request->has('publie') ? 1 : 0;
+        // Validation avec messages d'erreur personnalisés
+        try {
+            $validated = $request->validate([
+                'admin_id' => 'required|exists:admins,id',
+                'titre' => 'required|string|max:255',
+                'contenu' => 'required|string',
+                'media' => 'nullable|file|mimes:jpg,jpeg,png,gif,mp4,avi,mov,webm|max:51200', // 50MB
+                'categorie' => 'required|string',
+                'date_publication' => 'required|date',
+                'publie' => 'nullable',
+            ], [
+                'media.max' => 'Le fichier ne doit pas dépasser 50 Mo',
+                'media.mimes' => 'Format non supporté. Utilisez : jpg, jpeg, png, gif, mp4, avi, mov, webm'
+            ]);
 
-        $actualite = Actualite::create($validated);
+            Log::info('Validation OK');
 
-        // Support AJAX
-        if ($request->wantsJson() || $request->ajax()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Article créé avec succès!',
-                'data' => $actualite
-            ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Erreur validation:', $e->errors());
+            throw $e;
         }
 
-        return redirect()->route('actualites.index')
-            ->with('success', 'Article créé avec succès !');
+        try {
+            // Gérer l'upload du média
+            if ($request->hasFile('media')) {
+                $file = $request->file('media');
+
+                // Vérifier que le fichier est valide
+                if (!$file->isValid()) {
+                    Log::error('Fichier invalide:', [
+                        'error' => $file->getError(),
+                        'message' => $file->getErrorMessage()
+                    ]);
+                    throw new \Exception('Le fichier est invalide: ' . $file->getErrorMessage());
+                }
+
+                $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $file->getClientOriginalName());
+                Log::info('Tentative enregistrement:', ['filename' => $filename]);
+
+                $mediaPath = $file->storeAs('actualites', $filename, 'public');
+
+                if (!$mediaPath) {
+                    throw new \Exception('Erreur lors de l\'enregistrement du fichier');
+                }
+
+                Log::info('Fichier enregistré:', ['path' => $mediaPath]);
+                $validated['image'] = $mediaPath;
+            }
+
+            // Convertir la checkbox en boolean
+            $validated['publie'] = $request->has('publie') ? 1 : 0;
+
+            Log::info('Création actualité:', $validated);
+            $actualite = Actualite::create($validated);
+            Log::info('Actualité créée:', ['id' => $actualite->id]);
+
+            // Support AJAX
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Article créé avec succès!',
+                    'data' => $actualite
+                ], 201);
+            }
+
+            return redirect()->route('actualites.index')
+                ->with('success', 'Article créé avec succès !');
+
+        } catch (\Exception $e) {
+            Log::error('=== ERREUR UPLOAD ===');
+            Log::error('Message:', ['error' => $e->getMessage()]);
+            Log::error('Trace:', ['trace' => $e->getTraceAsString()]);
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erreur : ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Erreur lors de la création : ' . $e->getMessage());
+        }
     }
 
     /**
@@ -131,7 +200,7 @@ class ActualiteController extends Controller
      */
     public function edit(Actualite $actualite)
     {
-        // Support AJAX - CORRECTION IMPORTANTE ICI
+        // Support AJAX
         if (request()->wantsJson() || request()->ajax()) {
             $actualite->load('admin');
             return response()->json([
@@ -182,39 +251,71 @@ class ActualiteController extends Controller
             'admin_id' => 'required|exists:admins,id',
             'titre' => 'required|string|max:255',
             'contenu' => 'required|string',
-            'media' => 'nullable|file|mimes:jpg,jpeg,png,gif,mp4,avi,mov,webm|max:20480',
+            'media' => 'nullable|file|mimes:jpg,jpeg,png,gif,mp4,avi,mov,webm|max:51200',
             'categorie' => 'required|string',
             'date_publication' => 'required|date',
             'publie' => 'nullable',
+        ], [
+            'media.max' => 'Le fichier ne doit pas dépasser 50 Mo',
+            'media.mimes' => 'Format non supporté'
         ]);
 
-        // Gérer le nouveau média
-        if ($request->hasFile('media')) {
-            if ($actualite->image && Storage::disk('public')->exists($actualite->image)) {
-                Storage::disk('public')->delete($actualite->image);
+        try {
+            // Gérer le nouveau média
+            if ($request->hasFile('media')) {
+                $file = $request->file('media');
+
+                if (!$file->isValid()) {
+                    throw new \Exception('Le fichier est invalide ou corrompu');
+                }
+
+                // Supprimer l'ancien média
+                if ($actualite->image && Storage::disk('public')->exists($actualite->image)) {
+                    Storage::disk('public')->delete($actualite->image);
+                }
+
+                $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $file->getClientOriginalName());
+                $mediaPath = $file->storeAs('actualites', $filename, 'public');
+
+                if (!$mediaPath) {
+                    throw new \Exception('Erreur lors de l\'enregistrement du fichier');
+                }
+
+                $validated['image'] = $mediaPath;
             }
 
-            $file = $request->file('media');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $mediaPath = $file->storeAs('actualites', $filename, 'public');
-            $validated['image'] = $mediaPath;
-        }
+            $validated['publie'] = $request->has('publie') ? 1 : 0;
 
-        $validated['publie'] = $request->has('publie') ? 1 : 0;
+            $actualite->update($validated);
 
-        $actualite->update($validated);
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Article modifié avec succès!',
+                    'data' => $actualite
+                ]);
+            }
 
-        // Support AJAX
-        if ($request->wantsJson() || $request->ajax()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Article modifié avec succès!',
-                'data' => $actualite
+            return redirect()->route('actualites.index')
+                ->with('success', 'Article modifié avec succès !');
+
+        } catch (\Exception $e) {
+            Log::error('Erreur modification média', [
+                'actualite_id' => $actualite->id,
+                'message' => $e->getMessage()
             ]);
-        }
 
-        return redirect()->route('actualites.index')
-            ->with('success', 'Article modifié avec succès !');
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erreur : ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Erreur lors de la modification : ' . $e->getMessage());
+        }
     }
 
     /**
@@ -253,4 +354,3 @@ class ActualiteController extends Controller
         }
     }
 }
-

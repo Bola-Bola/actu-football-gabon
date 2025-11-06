@@ -3,22 +3,26 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\HomeController;
 use App\Models\inscription;
+use App\Models\Interview;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\EquipeController;
 use App\Http\Controllers\ResultatMatchController;
 use App\Http\Controllers\ClassementController;
 use App\Http\Controllers\ActualiteController;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\InscriptionController;
-use App\Models\Admin;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\AboutController;
+use App\Http\Controllers\InterviewController;
+use App\Http\Controllers\AdminInterviewController;
 
+
+Route::get('/a-propos', [AboutController::class, 'index'])->name('about');
 
 
 
 Route::get('/', [HomeController::class, 'home'])->name('home');
 Route::get('/equipe', [HomeController::class, 'equipe'])->name('equipe');
 Route::get('/match', [HomeController::class, 'match'])->name('match');
+Route::get('/interviews', [HomeController::class, 'interviews'])->name('interviews');
 
 
 
@@ -160,3 +164,36 @@ Route::get('/test-classement', function() {
         })
     ]);
 })->name('test.classement');
+
+
+
+
+// Routes publiques
+
+
+
+
+
+// Page principale (formulaire + tableau)
+Route::get('interview', [InterviewController::class, 'index'])->name('interview.index');
+
+// Création d'une interview
+Route::post('interview', [InterviewController::class, 'store'])->name('interview.store');
+
+// API : liste filtrée
+Route::get('interview/all', [InterviewController::class, 'all'])->name('interview.all');
+
+// API : statistiques globales
+Route::get('interview/stats', [InterviewController::class, 'stats'])->name('interview.stats');
+
+// Édition
+Route::get('interview/{id}/edit', [InterviewController::class, 'edit'])->name('interview.edit');
+
+// Mise à jour
+Route::put('interview/{id}', [InterviewController::class, 'update'])->name('interview.update');
+
+// Suppression
+Route::delete('interview/{id}', [InterviewController::class, 'destroy'])->name('interview.destroy');
+
+// Détails d'une interview (doit toujours être en dernier)
+Route::get('interview/{id}', [InterviewController::class, 'show'])->name('interview.show');

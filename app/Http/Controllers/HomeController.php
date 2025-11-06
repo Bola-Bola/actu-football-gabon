@@ -7,8 +7,8 @@ use App\Models\Equipe;
 use App\Models\Classement;
 use App\Models\Saison;
 use App\Models\Competition;
+use App\Models\Interview;
 use App\Services\ClassementService;
-use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -42,6 +42,43 @@ class HomeController extends Controller
     {
         $equipes = Equipe::orderBy('nom', 'asc')->get();
         return view('home.equipe', compact('equipes'));
+    }
+
+    /**
+     * Page interviews
+     */
+    public function interviews()
+    {
+        $interviews = Interview::where('statut', 'publie')
+            ->orderBy('date_interview', 'desc')
+            ->paginate(12);
+
+        return view('home.interviews', compact('interviews'));
+    }
+
+    /**
+     * Afficher une interview spécifique
+     */
+    public function showInterview($id)
+    {
+        $interview = Interview::where('statut', 'publie')
+            ->findOrFail($id);
+
+        // Incrémenter les vues
+        $interview->increment('vues');
+
+        // Interviews similaires (même catégorie ou récentes)
+        $interviewsSimilaires = Interview::where('statut', 'publie')
+            ->where('id', '!=', $id)
+            ->where(function($query) use ($interview) {
+                $query->where('categorie', $interview->categorie)
+                      ->orWhere('date_interview', '>=', now()->subMonths(3));
+            })
+            ->orderBy('date_interview', 'desc')
+            ->limit(3)
+            ->get();
+
+        return view('home.interview-detail', compact('interview', 'interviewsSimilaires'));
     }
 
     /**

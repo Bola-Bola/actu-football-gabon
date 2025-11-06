@@ -575,50 +575,55 @@
     </style>
 </head>
 <body>
-    <!-- Sidebar -->
-    <nav class="sidebar" id="sidebar">
-        <div class="sidebar-brand text-center">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Flag_of_Gabon.svg/200px-Flag_of_Gabon.svg.png" alt="Gabon">
-            <h3><i class="fas fa-futbol"></i> Football Gabon</h3>
-            <small class="text-muted">Administration Sportive</small>
-        </div>
+        <!-- Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-brand text-center">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Flag_of_Gabon.svg/200px-Flag_of_Gabon.svg.png" alt="Gabon">
+                <h3><i class="fas fa-futbol"></i> Football Gabon</h3>
+                <small class="text-muted">Administration Sportive</small>
+            </div>
 
-        <ul class="nav flex-column mt-4">
-            <li class="nav-item">
-                <a class="nav-link active" href="{{ route('dashboard') }}">
-                    <i class="fas fa-chart-line"></i> Tableau de bord
-                </a>
-            </li>
-            <li class="nav-item mt-3">
-                <a class="nav-link" href="{{ route('equipes.store') }}">
-                    <i class="fas fa-shield-alt"></i> Équipes
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{{ route('actualites.store') }}">
-                    <i class="fas fa-newspaper"></i> Actualités
-                </a>
-            </li>
-            <li class="nav-item mt-3">
-                <a class="nav-link" href="{{ route('matchs.store') }}">
-                    <i class="fas fa-medal"></i> Résultats-Matchs
-                </a>
-            </li>
+            <ul class="nav flex-column mt-4">
+                <li class="nav-item">
+                    <a class="nav-link active" href="{{ route('dashboard') }}">
+                        <i class="fas fa-chart-line"></i> Tableau de bord
+                    </a>
+                </li>
+                <li class="nav-item mt-3">
+                    <a class="nav-link" href="{{ route('equipes.store') }}">
+                        <i class="fas fa-shield-alt"></i> Équipes
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ route('actualites.store') }}">
+                        <i class="fas fa-newspaper"></i> Actualités
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ route('interview.store') }}">
+                        <i class="fas fa-newspaper"></i> Interviews
+                    </a>
+                </li>
+                <li class="nav-item mt-3">
+                    <a class="nav-link" href="{{ route('matchs.store') }}">
+                        <i class="fas fa-medal"></i> Résultats-Matchs
+                    </a>
+                </li>
 
-            <!-- Séparateur -->
-            <li class="nav-separator"></li>
+                <!-- Séparateur -->
+                <li class="nav-separator"></li>
 
-            <!-- Formulaire de déconnexion stylisé -->
-            <li class="nav-item">
-                <form action="{{ route('deconnexion') }}" method="POST" style="margin: 0;">
-                    @csrf
-                    <button type="submit" class="nav-link logout-btn">
-                        <i class="fas fa-sign-out-alt"></i> Déconnexion
-                    </button>
-                </form>
-            </li>
-        </ul>
-    </nav>
+                <!-- Formulaire de déconnexion stylisé -->
+                <li class="nav-item">
+                    <form action="{{ route('deconnexion') }}" method="POST" style="margin: 0;">
+                        @csrf
+                        <button type="submit" class="nav-link logout-btn">
+                            <i class="fas fa-sign-out-alt"></i> Déconnexion
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </nav>
     <!-- Main Content -->
     <div class="main-content">
         <!-- Top Navbar -->

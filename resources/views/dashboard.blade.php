@@ -541,6 +541,11 @@
                     <i class="fas fa-newspaper"></i> Actualités
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ route('interview.store') }}">
+                    <i class="fas fa-newspaper"></i> Interviews
+                </a>
+            </li>
             <li class="nav-item mt-3">
                 <a class="nav-link" href="{{ route('matchs.store') }}">
                     <i class="fas fa-medal"></i> Résultats-Matchs
