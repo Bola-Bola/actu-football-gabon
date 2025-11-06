@@ -1,3 +1,4 @@
+cat > render.yaml << 'EOF'
 services:
   - type: web
     name: football-actuel-gabon
@@ -8,10 +9,7 @@ services:
       php artisan key:generate --force
       php artisan storage:link
       chmod +x start.sh
-      echo "=== Build terminé ==="
-      pwd
-      ls -la
-    startCommand: bash start.sh
+    startCommand: ./start.sh
     envVars:
       - key: APP_ENV
         value: production
@@ -29,3 +27,4 @@ services:
         value: file
       - key: QUEUE_CONNECTION
         value: sync
+EOF
