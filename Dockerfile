@@ -57,75 +57,77 @@ RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 775 /var/www/html/storage \
     && chmod -R 775 /var/www/html/bootstrap/cache
 
-# Configuration Nginx
-RUN echo 'server { \n\
-    listen 10000 default_server; \n\
-    listen [::]:10000 default_server; \n\
-    \n\
-    # ROOT VERS PUBLIC \n\
-    root /var/www/html/public; \n\
-    \n\
-    server_name _; \n\
-    \n\
-    add_header X-Frame-Options "SAMEORIGIN"; \n\
-    add_header X-Content-Type-Options "nosniff"; \n\
-    \n\
-    index index.php index.html index.htm; \n\
-    \n\
-    charset utf-8; \n\
-    \n\
-    access_log /var/log/nginx/access.log; \n\
-    error_log /var/log/nginx/error.log; \n\
-    \n\
-    location / { \n\
-        try_files $uri $uri/ /index.php?$query_string; \n\
-    } \n\
-    \n\
-    location = /favicon.ico { access_log off; log_not_found off; } \n\
-    location = /robots.txt  { access_log off; log_not_found off; } \n\
-    \n\
-    error_page 404 /index.php; \n\
-    \n\
-    location ~ \.php$ { \n\
-        fastcgi_pass 127.0.0.1:9000; \n\
-        fastcgi_index index.php; \n\
-        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name; \n\
-        include fastcgi_params; \n\
-        fastcgi_hide_header X-Powered-By; \n\
-    } \n\
-    \n\
-    location ~ /\.(?!well-known).* { \n\
-        deny all; \n\
-    } \n\
-}' > /etc/nginx/sites-available/default
+# Créer le fichier de configuration Nginx proprement
+RUN cat > /etc/nginx/sites-available/default <<'NGINXCONF'
+server {
+    listen 10000 default_server;
+
+    root /var/www/html/public;
+
+    server_name _;
+
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-Content-Type-Options "nosniff";
+
+    index index.php index.html index.htm;
+
+    charset utf-8;
+
+    access_log /var/log/nginx/access.log;
+    error_log /var/log/nginx/error.log;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    error_page 404 /index.php;
+
+    location ~ \.php$ {
+        fastcgi_pass 127.0.0.1:9000;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_hide_header X-Powered-By;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}
+NGINXCONF
 
 # Configuration Nginx principale
-RUN echo 'user www-data; \n\
-worker_processes auto; \n\
-pid /run/nginx.pid; \n\
-error_log /var/log/nginx/error.log; \n\
-\n\
-events { \n\
-    worker_connections 1024; \n\
-} \n\
-\n\
-http { \n\
-    include /etc/nginx/mime.types; \n\
-    default_type application/octet-stream; \n\
-    \n\
-    access_log /var/log/nginx/access.log; \n\
-    \n\
-    sendfile on; \n\
-    tcp_nopush on; \n\
-    tcp_nodelay on; \n\
-    keepalive_timeout 65; \n\
-    types_hash_max_size 2048; \n\
-    \n\
-    gzip on; \n\
-    \n\
-    include /etc/nginx/conf.d/*.conf; \n\
-    include /etc/nginx/sites-enabled/*; \n\
-}' > /etc/nginx/nginx.conf
+RUN cat > /etc/nginx/nginx.conf <<'NGINXMAIN'
+user www-data;
+worker_processes auto;
+pid /run/nginx.pid;
+error_log /var/log/nginx/error.log;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    access_log /var/log/nginx/access.log;
+
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    types_hash_max_size 2048;
+
+    gzip on;
+
+    include /etc/nginx/conf.d/*.conf;
+    include /etc/nginx/sites-enabled/*;
+}
+NGINXMAIN
 
 # Recréer les liens Nginx
 RUN rm -f /etc/nginx/sites-enabled/default \
@@ -133,92 +135,95 @@ RUN rm -f /etc/nginx/sites-enabled/default \
     && ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
 # Script de démarrage
-RUN echo '#!/bin/bash\n\
-set -e\n\
-\n\
-echo "================================================="\n\
-echo "  🚀 Football Actuel Gabon"\n\
-echo "================================================="\n\
-\n\
-# VERIFICATION AVANT TOUT\n\
-echo "🔍 Vérification des fichiers..."\n\
-if [ ! -f /var/www/html/public/index.php ]; then\n\
-    echo "❌ ERREUR FATALE: public/index.php introuvable!"\n\
-    echo "Contenu de /var/www/html:"\n\
-    ls -lah /var/www/html/\n\
-    echo ""\n\
-    echo "Contenu de /var/www/html/public (si existe):"\n\
-    ls -lah /var/www/html/public/ 2>/dev/null || echo "Le dossier public n existe pas!"\n\
-    exit 1\n\
-fi\n\
-echo "✅ public/index.php trouvé"\n\
-\n\
-# Créer le fichier .env\n\
-cat > /var/www/html/.env << EOF\n\
-APP_NAME="${APP_NAME:-Laravel}"\n\
-APP_ENV="${APP_ENV:-production}"\n\
-APP_KEY="${APP_KEY}"\n\
-APP_DEBUG="${APP_DEBUG:-false}"\n\
-APP_URL="${APP_URL}"\n\
-\n\
-LOG_CHANNEL="${LOG_CHANNEL:-stack}"\n\
-LOG_LEVEL="${LOG_LEVEL:-error}"\n\
-\n\
-DB_CONNECTION="${DB_CONNECTION:-mysql}"\n\
-DB_HOST="${DB_HOST}"\n\
-DB_PORT="${DB_PORT:-3306}"\n\
-DB_DATABASE="${DB_DATABASE}"\n\
-DB_USERNAME="${DB_USERNAME}"\n\
-DB_PASSWORD="${DB_PASSWORD}"\n\
-\n\
-BROADCAST_DRIVER=log\n\
-CACHE_DRIVER="${CACHE_DRIVER:-file}"\n\
-FILESYSTEM_DISK=local\n\
-QUEUE_CONNECTION=sync\n\
-SESSION_DRIVER="${SESSION_DRIVER:-cookie}"\n\
-SESSION_LIFETIME=120\n\
-EOF\n\
-\n\
-echo "✅ Fichier .env créé"\n\
-\n\
-# Générer APP_KEY si nécessaire\n\
-if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "base64:CHANGEME" ]; then\n\
-    php artisan key:generate --force\n\
-fi\n\
-\n\
-# Storage link\n\
-php artisan storage:link --force 2>/dev/null || true\n\
-\n\
-# Démarrer PHP-FPM\n\
-echo "⚙️  Démarrage de PHP-FPM..."\n\
-php-fpm -D\n\
-sleep 3\n\
-\n\
-# Test Nginx\n\
-echo "⚙️  Test de la configuration Nginx..."\n\
-nginx -t\n\
-\n\
-# Optimisation Laravel\n\
-echo "⚙️  Optimisation de Laravel..."\n\
-php artisan config:cache\n\
-php artisan route:cache 2>/dev/null || true\n\
-php artisan view:cache\n\
-\n\
-# Migrations\n\
-echo "⚙️  Migrations de la base de données..."\n\
-php artisan migrate --force 2>/dev/null || echo "⚠️  Migrations ignorées"\n\
-\n\
-echo ""\n\
-echo "================================================="\n\
-echo "✅ Application démarrée avec succès!"\n\
-echo "📁 Root: /var/www/html/public"\n\
-echo "🌐 Port: 10000"\n\
-echo "================================================="\n\
-echo ""\n\
-\n\
-# Démarrer Nginx\n\
-exec nginx -g "daemon off;"\n\
-' > /start.sh && chmod +x /start.sh
+RUN cat > /start.sh <<'STARTSCRIPT'
+#!/bin/bash
+set -e
+
+echo "================================================="
+echo "  🚀 Football Actuel Gabon"
+echo "================================================="
+
+# VERIFICATION AVANT TOUT
+echo "🔍 Vérification des fichiers..."
+if [ ! -f /var/www/html/public/index.php ]; then
+    echo "❌ ERREUR FATALE: public/index.php introuvable!"
+    echo "Contenu de /var/www/html:"
+    ls -lah /var/www/html/
+    echo ""
+    echo "Contenu de /var/www/html/public (si existe):"
+    ls -lah /var/www/html/public/ 2>/dev/null || echo "Le dossier public n'existe pas!"
+    exit 1
+fi
+echo "✅ public/index.php trouvé"
+
+# Créer le fichier .env
+cat > /var/www/html/.env <<EOF
+APP_NAME=${APP_NAME:-Laravel}
+APP_ENV=${APP_ENV:-production}
+APP_KEY=${APP_KEY}
+APP_DEBUG=${APP_DEBUG:-false}
+APP_URL=${APP_URL}
+
+LOG_CHANNEL=${LOG_CHANNEL:-stack}
+LOG_LEVEL=${LOG_LEVEL:-error}
+
+DB_CONNECTION=${DB_CONNECTION:-mysql}
+DB_HOST=${DB_HOST}
+DB_PORT=${DB_PORT:-3306}
+DB_DATABASE=${DB_DATABASE}
+DB_USERNAME=${DB_USERNAME}
+DB_PASSWORD=${DB_PASSWORD}
+
+BROADCAST_DRIVER=log
+CACHE_DRIVER=${CACHE_DRIVER:-file}
+FILESYSTEM_DISK=local
+QUEUE_CONNECTION=sync
+SESSION_DRIVER=${SESSION_DRIVER:-cookie}
+SESSION_LIFETIME=120
+EOF
+
+echo "✅ Fichier .env créé"
+
+# Générer APP_KEY si nécessaire
+if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "base64:CHANGEME" ]; then
+    php artisan key:generate --force
+fi
+
+# Storage link
+php artisan storage:link --force 2>/dev/null || true
+
+# Démarrer PHP-FPM
+echo "⚙️  Démarrage de PHP-FPM..."
+php-fpm -D
+sleep 3
+
+# Test Nginx
+echo "⚙️  Test de la configuration Nginx..."
+nginx -t
+
+# Optimisation Laravel
+echo "⚙️  Optimisation de Laravel..."
+php artisan config:cache
+php artisan route:cache 2>/dev/null || true
+php artisan view:cache
+
+# Migrations
+echo "⚙️  Migrations de la base de données..."
+php artisan migrate --force 2>/dev/null || echo "⚠️  Migrations ignorées"
+
+echo ""
+echo "================================================="
+echo "✅ Application démarrée avec succès!"
+echo "📁 Root: /var/www/html/public"
+echo "🌐 Port: 10000"
+echo "================================================="
+echo ""
+
+# Démarrer Nginx
+exec nginx -g "daemon off;"
+STARTSCRIPT
+
+RUN chmod +x /start.sh
 
 EXPOSE 10000
 
