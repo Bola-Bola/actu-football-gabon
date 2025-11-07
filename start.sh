@@ -1,12 +1,22 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-echo "=== Démarrage de l'application ==="
-echo "Répertoire actuel: $(pwd)"
-echo "Contenu du répertoire:"
-ls -la
+echo "Démarrage de l'application Laravel..."
 
-echo "=== Contenu du dossier public ==="
-ls -la public/
+# Démarrer PHP-FPM en arrière-plan
+php-fpm -D
 
-echo "=== Démarrage du serveur Laravel ==="
-php artisan serve --host=0.0.0.0 --port=10000
+# Attendre que PHP-FPM soit prêt
+sleep 2
+
+# Optimiser Laravel pour la production
+echo "Optimisation de Laravel..."
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
+# Exécuter les migrations (décommentez si nécessaire)
+# php artisan migrate --force
+
+# Démarrer Nginx au premier plan
+echo "Démarrage de Nginx..."
+nginx -g "daemon off;"

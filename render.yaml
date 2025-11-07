@@ -1,15 +1,9 @@
-cat > render.yaml << 'EOF'
 services:
   - type: web
     name: football-actuel-gabon
-    env: php
+    env: docker
     plan: free
-    buildCommand: |
-      composer install --no-dev --optimize-autoloader
-      php artisan key:generate --force
-      php artisan storage:link
-      chmod +x start.sh
-    startCommand: ./start.sh
+    dockerfilePath: ./Dockerfile
     envVars:
       - key: APP_ENV
         value: production
@@ -25,6 +19,26 @@ services:
         value: cookie
       - key: CACHE_DRIVER
         value: file
-      - key: QUEUE_CONNECTION
-        value: sync
-EOF
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_HOST
+        fromDatabase:
+          name: actufootgabon
+          property: host
+      - key: DB_DATABASE
+        fromDatabase:
+          name: actufootgabon
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: actufootgabon
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: actufootgabon
+          property: password
+
+databases:
+  - name: actufootgabon
+    databaseName: laravel
+    user: actufootgabon_user
