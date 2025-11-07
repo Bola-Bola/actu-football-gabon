@@ -6,7 +6,7 @@ services:
     dockerfilePath: ./Dockerfile
     envVars:
       - key: APP_NAME
-        value: "Football Actuel Gabon"
+        value: "FootballActuelGabon"
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
@@ -14,7 +14,7 @@ services:
       - key: APP_KEY
         value: base64:yoPOyrq4Qe6P++5mrIR1lrvKriVR0G+xHvc2eUE0jDA=
       - key: APP_URL
-        value: https://actu-football-gabon.onrender.com
+        value: https://football-actuel-gabon.onrender.com
       - key: LOG_CHANNEL
         value: stack
       - key: LOG_LEVEL
