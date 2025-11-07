@@ -22,35 +22,47 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Définir le répertoire de travail
 WORKDIR /var/www/html
 
-# Copier les fichiers composer en premier (pour le cache Docker)
+# Copier composer.json et composer.lock
 COPY composer.json composer.lock ./
 
-# Installer les dépendances PHP
+# Installer les dépendances PHP sans autoload
 RUN composer install --no-dev --optimize-autoloader --no-scripts --no-autoloader
 
-# Copier tous les fichiers de l'application
+# Copier TOUS les fichiers de l'application (y compris public/)
 COPY . .
 
-# Créer le fichier .env depuis les variables d'environnement (sera rempli au démarrage)
-RUN touch .env
+# VERIFICATION CRITIQUE : Vérifier que public/index.php existe après la copie
+RUN if [ ! -f public/index.php ]; then \
+        echo "❌ ERREUR FATALE: public/index.php n'a pas été copié!"; \
+        echo "Contenu de /var/www/html:"; \
+        ls -la /var/www/html/; \
+        echo "Contenu de /var/www/html/public:"; \
+        ls -la /var/www/html/public/ || echo "Le dossier public n'existe pas!"; \
+        exit 1; \
+    fi
 
 # Finaliser l'installation de Composer
 RUN composer dump-autoload --optimize
 
+# Créer le fichier .env
+RUN touch .env
+
 # Créer les dossiers nécessaires avec les bonnes permissions
 RUN mkdir -p storage/framework/{sessions,views,cache} \
     && mkdir -p storage/logs \
-    && mkdir -p bootstrap/cache \
-    && chown -R www-data:www-data /var/www/html \
+    && mkdir -p bootstrap/cache
+
+# Permissions
+RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 775 /var/www/html/storage \
     && chmod -R 775 /var/www/html/bootstrap/cache
 
-# Configuration Nginx - ABSOLUMENT FORCER sur /var/www/html/public
+# Configuration Nginx
 RUN echo 'server { \n\
     listen 10000 default_server; \n\
     listen [::]:10000 default_server; \n\
     \n\
-    # ROOT ABSOLU VERS PUBLIC \n\
+    # ROOT VERS PUBLIC \n\
     root /var/www/html/public; \n\
     \n\
     server_name _; \n\
@@ -62,11 +74,9 @@ RUN echo 'server { \n\
     \n\
     charset utf-8; \n\
     \n\
-    # Log pour debug \n\
     access_log /var/log/nginx/access.log; \n\
     error_log /var/log/nginx/error.log; \n\
     \n\
-    # Toute requête passe par index.php dans public \n\
     location / { \n\
         try_files $uri $uri/ /index.php?$query_string; \n\
     } \n\
@@ -76,28 +86,20 @@ RUN echo 'server { \n\
     \n\
     error_page 404 /index.php; \n\
     \n\
-    # PHP-FPM pour tous les fichiers .php \n\
     location ~ \.php$ { \n\
         fastcgi_pass 127.0.0.1:9000; \n\
         fastcgi_index index.php; \n\
         fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name; \n\
         include fastcgi_params; \n\
         fastcgi_hide_header X-Powered-By; \n\
-        fastcgi_param PATH_INFO $fastcgi_path_info; \n\
     } \n\
     \n\
-    # Bloquer l accès aux fichiers cachés \n\
     location ~ /\.(?!well-known).* { \n\
-        deny all; \n\
-    } \n\
-    \n\
-    # Bloquer l accès aux fichiers sensibles \n\
-    location ~ /\.(env|git|htaccess) { \n\
         deny all; \n\
     } \n\
 }' > /etc/nginx/sites-available/default
 
-# Créer aussi un fichier nginx.conf principal
+# Configuration Nginx principale
 RUN echo 'user www-data; \n\
 worker_processes auto; \n\
 pid /run/nginx.pid; \n\
@@ -111,11 +113,7 @@ http { \n\
     include /etc/nginx/mime.types; \n\
     default_type application/octet-stream; \n\
     \n\
-    log_format main "$remote_addr - $remote_user [$time_local] \"$request\" " \n\
-                    "$status $body_bytes_sent \"$http_referer\" " \n\
-                    "\"$http_user_agent\" \"$http_x_forwarded_for\""; \n\
-    \n\
-    access_log /var/log/nginx/access.log main; \n\
+    access_log /var/log/nginx/access.log; \n\
     \n\
     sendfile on; \n\
     tcp_nopush on; \n\
@@ -124,29 +122,38 @@ http { \n\
     types_hash_max_size 2048; \n\
     \n\
     gzip on; \n\
-    gzip_vary on; \n\
-    gzip_proxied any; \n\
-    gzip_comp_level 6; \n\
-    gzip_types text/plain text/css text/xml text/javascript application/json application/javascript application/xml+rss application/rss+xml font/truetype font/opentype application/vnd.ms-fontobject image/svg+xml; \n\
     \n\
     include /etc/nginx/conf.d/*.conf; \n\
     include /etc/nginx/sites-enabled/*; \n\
 }' > /etc/nginx/nginx.conf
 
-# Supprimer les configurations par défaut et recréer le lien
+# Recréer les liens Nginx
 RUN rm -f /etc/nginx/sites-enabled/default \
     && rm -f /etc/nginx/conf.d/default.conf \
     && ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
-# Script de démarrage amélioré
+# Script de démarrage
 RUN echo '#!/bin/bash\n\
 set -e\n\
 \n\
 echo "================================================="\n\
-echo "  Démarrage de Football Actuel Gabon"\n\
+echo "  🚀 Football Actuel Gabon"\n\
 echo "================================================="\n\
 \n\
-# Créer le fichier .env avec les variables d environnement de Render\n\
+# VERIFICATION AVANT TOUT\n\
+echo "🔍 Vérification des fichiers..."\n\
+if [ ! -f /var/www/html/public/index.php ]; then\n\
+    echo "❌ ERREUR FATALE: public/index.php introuvable!"\n\
+    echo "Contenu de /var/www/html:"\n\
+    ls -lah /var/www/html/\n\
+    echo ""\n\
+    echo "Contenu de /var/www/html/public (si existe):"\n\
+    ls -lah /var/www/html/public/ 2>/dev/null || echo "Le dossier public n existe pas!"\n\
+    exit 1\n\
+fi\n\
+echo "✅ public/index.php trouvé"\n\
+\n\
+# Créer le fichier .env\n\
 cat > /var/www/html/.env << EOF\n\
 APP_NAME="${APP_NAME:-Laravel}"\n\
 APP_ENV="${APP_ENV:-production}"\n\
@@ -172,68 +179,47 @@ SESSION_DRIVER="${SESSION_DRIVER:-cookie}"\n\
 SESSION_LIFETIME=120\n\
 EOF\n\
 \n\
-echo "✓ Fichier .env créé"\n\
+echo "✅ Fichier .env créé"\n\
 \n\
-# Générer la clé APP_KEY si elle n existe pas\n\
+# Générer APP_KEY si nécessaire\n\
 if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "base64:CHANGEME" ]; then\n\
-    echo "⚠ Génération de APP_KEY..."\n\
     php artisan key:generate --force\n\
 fi\n\
 \n\
-# Créer le lien symbolique storage\n\
-php artisan storage:link --force || echo "⚠ Storage link déjà créé"\n\
+# Storage link\n\
+php artisan storage:link --force 2>/dev/null || true\n\
 \n\
-# Vérifier que public/index.php existe\n\
-if [ ! -f /var/www/html/public/index.php ]; then\n\
-    echo "❌ ERREUR: public/index.php introuvable!"\n\
-    ls -la /var/www/html/\n\
-    exit 1\n\
-fi\n\
-\n\
-echo "✓ Fichier public/index.php trouvé"\n\
-\n\
-# Démarrer PHP-FPM en arrière-plan\n\
-echo "⚙ Démarrage de PHP-FPM..."\n\
+# Démarrer PHP-FPM\n\
+echo "⚙️  Démarrage de PHP-FPM..."\n\
 php-fpm -D\n\
-\n\
-# Attendre que PHP-FPM soit prêt\n\
 sleep 3\n\
 \n\
-# Tester la configuration Nginx\n\
-echo "⚙ Test de la configuration Nginx..."\n\
+# Test Nginx\n\
+echo "⚙️  Test de la configuration Nginx..."\n\
 nginx -t\n\
 \n\
-# Optimiser Laravel pour la production\n\
-echo "⚙ Optimisation de Laravel..."\n\
-php artisan config:clear\n\
+# Optimisation Laravel\n\
+echo "⚙️  Optimisation de Laravel..."\n\
 php artisan config:cache\n\
-php artisan route:cache || echo "⚠ Route cache échoué"\n\
+php artisan route:cache 2>/dev/null || true\n\
 php artisan view:cache\n\
 \n\
-# Exécuter les migrations\n\
-echo "⚙ Exécution des migrations..."\n\
-php artisan migrate --force || echo "⚠ Migrations échouées ou déjà exécutées"\n\
+# Migrations\n\
+echo "⚙️  Migrations de la base de données..."\n\
+php artisan migrate --force 2>/dev/null || echo "⚠️  Migrations ignorées"\n\
 \n\
-# Afficher les informations de configuration\n\
-echo "================================================="\n\
-echo "  Configuration Nginx"\n\
-echo "================================================="\n\
-echo "✓ Port: 10000"\n\
-echo "✓ Root: /var/www/html/public"\n\
-echo "✓ Index: index.php"\n\
 echo ""\n\
-echo "Contenu de /var/www/html/public:"\n\
-ls -lah /var/www/html/public/\n\
 echo "================================================="\n\
+echo "✅ Application démarrée avec succès!"\n\
+echo "📁 Root: /var/www/html/public"\n\
+echo "🌐 Port: 10000"\n\
+echo "================================================="\n\
+echo ""\n\
 \n\
-# Démarrer Nginx au premier plan\n\
-echo "🚀 Démarrage de Nginx..."\n\
-echo ""\n\
+# Démarrer Nginx\n\
 exec nginx -g "daemon off;"\n\
 ' > /start.sh && chmod +x /start.sh
 
-# Exposer le port
 EXPOSE 10000
 
-# Démarrer l application
 CMD ["/start.sh"]
