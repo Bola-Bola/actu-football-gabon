@@ -3,6 +3,7 @@ services:
     name: football-actuel-gabon
     env: docker
     plan: free
+    publishPath: public
     dockerfilePath: ./Dockerfile
     envVars:
       - key: APP_ENV
