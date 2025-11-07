@@ -618,7 +618,7 @@
                     <form action="{{ route('deconnexion') }}" method="POST" style="margin: 0;">
                         @csrf
                         <button type="submit" class="nav-link logout-btn">
-                            <i class="fas fa-sign-out-alt"></i> Déconnexion
+                            <i class="fas fa-sign-out-alt"></i> Déconnexio
                         </button>
                     </form>
                 </li>
