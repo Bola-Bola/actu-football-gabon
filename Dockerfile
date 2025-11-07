@@ -24,30 +24,25 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Définir le répertoire de travail
 WORKDIR /var/www/html
 
-# Copier composer.json et composer.lock
-COPY composer.json composer.lock ./
-
-# Installer les dépendances PHP sans autoload
-RUN composer install --no-dev --optimize-autoloader --no-scripts --no-autoloader
-
-# Copier TOUS les fichiers de l'application (y compris public/)
+# Copier TOUS les fichiers de l'application
 COPY . .
 
-# VERIFICATION CRITIQUE : Vérifier que public/index.php existe après la copie
-RUN if [ ! -f public/index.php ]; then \
-        echo "❌ ERREUR FATALE: public/index.php n'a pas été copié!"; \
-        echo "Contenu de /var/www/html:"; \
-        ls -la /var/www/html/; \
-        echo "Contenu de /var/www/html/public:"; \
-        ls -la /var/www/html/public/ || echo "Le dossier public n'existe pas!"; \
+# Vérifications des fichiers critiques
+RUN if [ ! -f composer.json ]; then \
+        echo "❌ ERREUR: composer.json manquant!"; \
+        exit 1; \
+    fi && \
+    if [ ! -f public/index.php ]; then \
+        echo "❌ ERREUR: public/index.php manquant!"; \
         exit 1; \
     fi
 
-# Finaliser l'installation de Composer
-RUN composer dump-autoload --optimize
+# Nettoyer le cache de Composer avant installation
+RUN composer clear-cache
 
-# Créer le fichier .env
-RUN touch .env
+# Installer les dépendances PHP
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist || \
+    (echo "❌ Composer install failed" && cat /root/.composer/cache.log 2>/dev/null && exit 1)
 
 # Créer les dossiers nécessaires avec les bonnes permissions
 RUN mkdir -p storage/framework/{sessions,views,cache} \
@@ -149,11 +144,6 @@ echo "================================================="
 echo "🔍 Vérification des fichiers..."
 if [ ! -f /var/www/html/public/index.php ]; then
     echo "❌ ERREUR FATALE: public/index.php introuvable!"
-    echo "Contenu de /var/www/html:"
-    ls -lah /var/www/html/
-    echo ""
-    echo "Contenu de /var/www/html/public (si existe):"
-    ls -lah /var/www/html/public/ 2>/dev/null || echo "Le dossier public n'existe pas!"
     exit 1
 fi
 echo "✅ public/index.php trouvé"
