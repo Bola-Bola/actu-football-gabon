@@ -9,12 +9,14 @@ RUN apt-get update && apt-get install -y \
     libonig-dev \
     libxml2-dev \
     libzip-dev \
+    libpq-dev \
+    postgresql-client \
     zip \
     unzip \
     && rm -rf /var/lib/apt/lists/*
 
-# Installation des extensions PHP nécessaires pour Laravel
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
+# Installation des extensions PHP nécessaires pour Laravel (PostgreSQL au lieu de MySQL)
+RUN docker-php-ext-install pdo_pgsql pgsql mbstring exif pcntl bcmath gd zip
 
 # Installation de Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -167,18 +169,18 @@ APP_URL=${APP_URL}
 LOG_CHANNEL=${LOG_CHANNEL:-stack}
 LOG_LEVEL=${LOG_LEVEL:-error}
 
-DB_CONNECTION=${DB_CONNECTION:-mysql}
+DB_CONNECTION=pgsql
 DB_HOST=${DB_HOST}
-DB_PORT=${DB_PORT:-3306}
+DB_PORT=${DB_PORT:-5432}
 DB_DATABASE=${DB_DATABASE}
 DB_USERNAME=${DB_USERNAME}
 DB_PASSWORD=${DB_PASSWORD}
 
 BROADCAST_DRIVER=log
-CACHE_DRIVER=${CACHE_DRIVER:-file}
+CACHE_DRIVER=${CACHE_DRIVER:-database}
 FILESYSTEM_DISK=local
-QUEUE_CONNECTION=sync
-SESSION_DRIVER=${SESSION_DRIVER:-cookie}
+QUEUE_CONNECTION=${QUEUE_CONNECTION:-database}
+SESSION_DRIVER=${SESSION_DRIVER:-database}
 SESSION_LIFETIME=120
 EOF
 
@@ -203,13 +205,41 @@ nginx -t
 
 # Optimisation Laravel
 echo "⚙️  Optimisation de Laravel..."
+php artisan config:clear
 php artisan config:cache
 php artisan route:cache 2>/dev/null || true
 php artisan view:cache
 
+# Test de connexion à la base de données
+echo ""
+echo "🔍 Test de connexion à la base de données..."
+php artisan db:test || echo "⚠️  Commande db:test non disponible, on continue..."
+
 # Migrations
 echo "⚙️  Migrations de la base de données..."
-php artisan migrate --force 2>/dev/null || echo "⚠️  Migrations ignorées"
+echo "Configuration BD:"
+echo "  Host: ${DB_HOST}"
+echo "  Database: ${DB_DATABASE}"
+echo "  User: ${DB_USERNAME}"
+echo ""
+
+# Attendre que la base de données soit prête
+echo "⏳ Attente de la base de données..."
+for i in {1..30}; do
+    if php artisan migrate --force 2>&1; then
+        echo "✅ Migrations réussies!"
+        break
+    else
+        if [ $i -eq 30 ]; then
+            echo "❌ ERREUR: Impossible de se connecter à la base de données après 30 tentatives"
+            echo "Détails de l'erreur:"
+            php artisan migrate --force
+        else
+            echo "⏳ Tentative $i/30 - Nouvelle tentative dans 2 secondes..."
+            sleep 2
+        fi
+    fi
+done
 
 echo ""
 echo "================================================="

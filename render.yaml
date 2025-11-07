@@ -3,25 +3,32 @@ services:
     name: football-actuel-gabon
     env: docker
     plan: free
-    publishPath: public
     dockerfilePath: ./Dockerfile
     envVars:
+      - key: APP_NAME
+        value: "Football Actuel Gabon"
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
-        value: false
+        value: "false"
       - key: APP_KEY
-        sync: false
+        value: base64:yoPOyrq4Qe6P++5mrIR1lrvKriVR0G+xHvc2eUE0jDA=
       - key: APP_URL
         value: https://actu-football-gabon.onrender.com
       - key: LOG_CHANNEL
-        value: errorlog
+        value: stack
+      - key: LOG_LEVEL
+        value: debug
       - key: SESSION_DRIVER
-        value: cookie
+        value: database
       - key: CACHE_DRIVER
-        value: file
+        value: database
+      - key: QUEUE_CONNECTION
+        value: database
       - key: DB_CONNECTION
-        value: mysql
+        value: pgsql
+      - key: DB_PORT
+        value: "5432"
       - key: DB_HOST
         fromDatabase:
           name: actufootgabon
@@ -41,5 +48,6 @@ services:
 
 databases:
   - name: actufootgabon
-    databaseName: laravel
+    databaseName: actufootgabon
     user: actufootgabon_user
+    plan: free
